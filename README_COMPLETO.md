@@ -8,7 +8,7 @@ Este proyecto tiene como objetivo identificar perfiles de pasajeros aéreos medi
 
 ### 2.1 Análisis estadístico
 
-Se utilizó el conjunto de datos de prueba ("test") de la base "Airline Passenger Satisfaction", el cual contiene 25.976 registros. Debido a restricciones de procesamiento en Google Colab, se trabajó con una muestra reducida de 12.322 observaciones. El análisis exploratorio incluyó boxplots e histogramas con curvas de densidad para las 12 variables numéricas. Se detectaron outliers en tres variables: "Flight Distance", "Departure Delay in Minutes" y "Arrival Delay in Minutes". A continuación, se presentan las estadísticas descriptivas de las variables seleccionadas:
+Se utilizó el conjunto de datos de prueba ("test") de la base "Airline Passenger Satisfaction", el cual contiene 25.976 registros. Debido a restricciones de procesamiento en Google Colab, se trabajó con una muestra reducida de 12.322 observaciones (luego de quitar los outliers). El análisis exploratorio incluyó boxplots e histogramas con curvas de densidad para las 12 variables numéricas. Se detectaron outliers en tres variables: "Flight Distance", "Departure Delay in Minutes" y "Arrival Delay in Minutes". A continuación, se presentan las estadísticas descriptivas de las variables seleccionadas:
 
 | Variable                   | count   | mean   | std   | min | 25% | 50% | 75%   | max   |
 |----------------------------|---------|--------|-------|-----|-----|-----|--------|--------|
@@ -29,7 +29,9 @@ Se descartaron variables categóricas o redundantes, y se seleccionaron únicame
 
 ### 3.1 K-Means con análisis del número óptimo de clusters
 
-Se aplicó el algoritmo K-Means sobre las variables escaladas: "Age", "Flight Distance", "Departure Delay in Minutes" y "Arrival Delay in Minutes". El número óptimo de clusters fue determinado mediante el método del codo y validado con el coeficiente de Silhouette. Se evaluaron los valores de k = 4 y k = 5, siendo k = 4 el seleccionado por alcanzar un mayor puntaje (0.4431 frente a 0.3868).
+Se aplicó el algoritmo K-Means sobre las variables escaladas: "Age", "Flight Distance", "Departure Delay in Minutes" y "Arrival Delay in Minutes". El número óptimo de clusters fue determinado mediante el método del codo y validado con el coeficiente de Silhouette. Se evaluaron los valores de k = 4 y k = 5, siendo k = 4 el seleccionado por alcanzar un mayor puntaje (0.4431 frente a 0.3868). Esta segmentación reveló cuatro perfiles distintos con diferencias claras en edad, distancia de vuelo y nivel de demoras.
+
+A continuación se presentan los promedios por cluster generados con K-Means:
 
 | KMeans_Cluster | Age   | Flight Distance | Departure Delay in Minutes | Arrival Delay in Minutes |
 |----------------|-------|------------------|-----------------------------|---------------------------|
@@ -40,7 +42,9 @@ Se aplicó el algoritmo K-Means sobre las variables escaladas: "Age", "Flight Di
 
 ### 3.2 DBSCAN con ajuste de eps y min_samples
 
-Se utilizó DBSCAN para captar formas no esféricas y detectar observaciones ruidosas. Se implementó una grilla de búsqueda con eps = [0.05, 0.25, 0.5, 0.75, 1] y min_samples = [1, 5, 10, 15, 20]. La mejor combinación fue eps = 0.25 y min_samples = 5.
+Se utilizó DBSCAN para captar formas no esféricas y detectar observaciones ruidosas. Se implementó una grilla de búsqueda con eps = [0.05, 0.25, 0.5, 0.75, 1] y min_samples = [1, 5, 10, 15, 20]. La mejor combinación fue eps = 0.25 y min_samples = 5, ya que produjo una segmentación equilibrada, con 15 clusters válidos y un porcentaje razonable de puntos etiquetados como ruido (~10%). Esta configuración evitó tanto la sobresegmentación como la fusión excesiva de grupos, y permitió capturar perfiles atípicos como pasajeros infantiles o de edad avanzada en vuelos largos.
+
+Promedios por cluster obtenidos con DBSCAN (excluyendo ruido):
 
 | DBSCAN_Cluster | Age   | Flight Distance | Departure Delay in Minutes | Arrival Delay in Minutes |
 |----------------|-------|------------------|-----------------------------|---------------------------|
@@ -62,14 +66,15 @@ Se utilizó DBSCAN para captar formas no esféricas y detectar observaciones rui
 
 ### 3.3 PCA para reducción lineal y visualización 2D
 
-Para facilitar la visualización y validación de los resultados de clustering, se aplicó PCA con dos componentes principales. En los resultados de K-Means, los grupos se visualizaron con formas relativamente compactas y bien separadas. En contraste, los clusters de DBSCAN mostraron mayor dispersión y formas irregulares, revelando estructuras de densidad más complejas.
+Para facilitar la visualización y validación de los resultados de clustering, se aplicó PCA con dos componentes principales. Esta transformación conservó la variabilidad estructural de los datos y permitió observar claramente la distribución de los clusters en un plano bidimensional. En los resultados de K-Means, los grupos se visualizaron con formas relativamente compactas y bien separadas, alineadas con la lógica del algoritmo que tiende a formar agrupamientos esféricos. En contraste, los clusters de DBSCAN mostraron mayor dispersión y formas irregulares, revelando estructuras de densidad más complejas que no siguen patrones circulares, lo que justifica su ventaja para identificar patrones menos evidentes.
 
 ### 3.4 t-SNE para detección visual de agrupamientos complejos
 
-Se utilizó t-SNE con diferentes configuraciones. Los mejores resultados se lograron con perplexity = 30 y learning rate = 200. Los clusters de K-Means aparecieron como islas diferenciadas, mientras que los resultados de DBSCAN mostraron una estructura más orgánica con zonas de alta densidad bien delimitadas y áreas intermedias ocupadas por puntos considerados ruido.
+Se utilizó t-SNE como técnica de reducción no lineal para evaluar la separación entre grupos de forma visual. Se exploraron distintas configuraciones de perplexity (10, 30, 50) y learning rate (100, 200, 500). Los mejores resultados se lograron con perplexity = 30 y learning rate = 200, ya que esta combinación ofreció la visualización más nítida de los clusters sin solapamientos, conservando la proximidad local entre puntos similares y destacando patrones ocultos no lineales. En las visualizaciones generadas, los clusters de K-Means aparecieron como islas diferenciadas, mientras que los resultados de DBSCAN mostraron una estructura más orgánica con áreas de alta densidad bien delimitadas y zonas intermedias ocupadas por puntos considerados ruido.
 
 ## 4. Conclusiones y recomendaciones
 
-El análisis permitió identificar perfiles como: adultos mayores con vuelos cortos sin demoras, jóvenes en vuelos medianos, adultos en trayectos largos sin incidentes y pasajeros con mayores demoras en salida. DBSCAN permitió detectar microgrupos como niños o adultos mayores en vuelos intercontinentales. Las diferencias clave entre ambos modelos radican en su sensibilidad a la forma y densidad de los datos.
+El análisis permitió identificar perfiles como: adultos mayores con vuelos cortos sin demoras, jóvenes en vuelos medianos, adultos en trayectos largos sin incidentes, y pasajeros con mayores demoras en salida. DBSCAN permitió detectar microgrupos como niños o adultos mayores en vuelos intercontinentales, que no se evidenciaban en K-Means. Las diferencias clave entre ambos modelos radican en su sensibilidad a la forma y densidad de los datos: K-Means genera agrupaciones más uniformes, mientras que DBSCAN capta estructuras complejas y permite identificar ruido.
 
-Entre las principales limitaciones se encuentra la necesidad de reducir el tamaño de la muestra por restricciones computacionales y la exclusión de variables categóricas. Se recomienda para futuras investigaciones utilizar algoritmos como HDBSCAN o GMM, incorporar variables cualitativas transformadas y ampliar la muestra para evaluar la robustez de los resultados.
+Entre las principales limitaciones se encuentra la necesidad de reducir el tamaño de la muestra por restricciones computacionales y la exclusión de variables categóricas, que podrían enriquecer el análisis si se convierten adecuadamente. Para futuras investigaciones se sugiere utilizar algoritmos como HDBSCAN o GMM, incorporar variables cualitativas transformadas, y ampliar la muestra completa para evaluar la robustez de los resultados en escenarios reales más extensos.
+
